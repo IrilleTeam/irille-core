@@ -28,7 +28,7 @@ public abstract class Entity extends Query2 {
 		Table<?> table = Entity.table(this.getClass());
 		EntityQuery<?> q = insert(this.getClass());
 		for (IColumnField field : Entity.fields(this.getClass())) {
-			if (field.column().isPrimary())
+			if (field.column().isPrimary() && field.column().isAutoIncrement())
 				continue;
 			try {
 				Serializable value = (Serializable) field.column().getterMethod().invoke(this);
@@ -39,7 +39,9 @@ public abstract class Entity extends Query2 {
 		}
 		Serializable key = q.executeUpdateReturnGeneratedKey(table.primaryKey().type());
 		try {
-			table.primaryKey().setterMethod().invoke(this, key);
+			Column primaryKey = table.primaryKey();
+			if(primaryKey.isAutoIncrement())
+				table.primaryKey().setterMethod().invoke(this, key);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			throw LOG.err(e, "setTo", "对象【{0}】赋值到数据库记录时出错!", getClass());
 		}
